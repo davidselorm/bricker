@@ -1,0 +1,27 @@
+{
+  "name": "bricker",
+  "version": "1.0.0",
+  "description": "A modern, neon arcade brick-breaker game built with vanilla JavaScript, HTML5 Canvas, and Web Audio API.",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "start": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "keywords": [
+    "game",
+    "arcade",
+    "brick-breaker",
+    "breakout",
+    "arkanoid",
+    "canvas",
+    "javascript",
+    "web-audio"
+  ],
+  "author": "davidselorm",
+  "license": "MIT",
+  "devDependencies": {
+    "vite": "^6.0.0"
+  }
+}
