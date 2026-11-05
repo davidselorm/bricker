@@ -1,5 +1,5 @@
 /**
- * Paddle Controller & Laser Blaster for BRICKER.
+ * Upgraded Tactical Paddle Controller & Laser System for BRICKER.
  */
 export class Paddle {
   constructor(canvasWidth, canvasHeight) {
@@ -10,22 +10,27 @@ export class Paddle {
     this.height = 14;
     this.x = (canvasWidth - this.width) / 2;
     this.y = canvasHeight - 45;
+    this.prevX = this.x;
+    this.vx = 0;
     this.targetX = this.x;
-    this.speed = 700; // pixels per second for keyboard
+    this.speed = 750; // pixels per second
     this.lasers = [];
     this.laserCooldown = 0;
+    this.recoil = 0;
   }
 
   reset() {
     this.width = this.baseWidth;
     this.x = (this.canvasWidth - this.width) / 2;
+    this.prevX = this.x;
     this.targetX = this.x;
+    this.vx = 0;
     this.lasers = [];
     this.laserCooldown = 0;
+    this.recoil = 0;
   }
 
   setTargetX(mouseX) {
-    // Center paddle around mouse
     this.targetX = Math.max(0, Math.min(this.canvasWidth - this.width, mouseX - this.width / 2));
   }
 
@@ -41,16 +46,20 @@ export class Paddle {
     // Check wide paddle effect
     const isWide = powerupManager && powerupManager.hasEffect('wide');
     const targetWidth = isWide ? this.baseWidth * 1.45 : this.baseWidth;
-    // Smooth width change
     this.width += (targetWidth - this.width) * Math.min(1, dt * 10);
 
-    // Smooth movement interpolation toward target
-    this.x += (this.targetX - this.x) * Math.min(1, dt * 25);
+    // Calculate paddle velocity for spin mechanics
+    this.prevX = this.x;
+    this.x += (this.targetX - this.x) * Math.min(1, dt * 26);
     this.x = Math.max(0, Math.min(this.canvasWidth - this.width, this.x));
+    this.vx = dt > 0 ? (this.x - this.prevX) / dt : 0;
 
-    // Laser firing cooldown and update
+    // Laser firing cooldown and recoil recovery
     if (this.laserCooldown > 0) {
       this.laserCooldown -= dt;
+    }
+    if (this.recoil > 0) {
+      this.recoil = Math.max(0, this.recoil - dt * 18);
     }
 
     // Update active laser projectiles
@@ -65,22 +74,23 @@ export class Paddle {
 
   fireLaser(audioEngine) {
     if (this.laserCooldown > 0) return false;
-    this.laserCooldown = 0.22; // Seconds between shots
+    this.laserCooldown = 0.22;
+    this.recoil = 3.5; // Slight downward recoil kick
 
-    // Twin lasers from left and right tips
+    // Twin lasers from left and right turrets
     this.lasers.push({
       x: this.x + 8,
-      y: this.y - 6,
+      y: this.y - 8,
       width: 4,
-      height: 16,
-      vy: -750
+      height: 18,
+      vy: -780
     });
     this.lasers.push({
       x: this.x + this.width - 12,
-      y: this.y - 6,
+      y: this.y - 8,
       width: 4,
-      height: 16,
-      vy: -750
+      height: 18,
+      vy: -780
     });
 
     if (audioEngine) audioEngine.playLaserShot();
@@ -92,42 +102,47 @@ export class Paddle {
     const hasLaser = powerupManager && powerupManager.hasEffect('laser');
     const isWide = powerupManager && powerupManager.hasEffect('wide');
 
-    // Glow effects
     const glowColor = hasLaser ? '#ff007f' : (isWide ? '#00ff88' : '#00f0ff');
     ctx.shadowColor = glowColor;
     ctx.shadowBlur = 14;
 
-    // Paddle body gradient
-    const grad = ctx.createLinearGradient(this.x, this.y, this.x, this.y + this.height);
+    const drawY = this.y + this.recoil;
+
+    // Paddle chassis gradient
+    const grad = ctx.createLinearGradient(this.x, drawY, this.x, drawY + this.height);
     grad.addColorStop(0, '#ffffff');
-    grad.addColorStop(0.3, glowColor);
-    grad.addColorStop(1, '#080816');
+    grad.addColorStop(0.28, glowColor);
+    grad.addColorStop(1, '#060614');
 
     ctx.fillStyle = grad;
     ctx.beginPath();
-    ctx.roundRect(this.x, this.y, this.width, this.height, 7);
+    ctx.roundRect(this.x, drawY, this.width, this.height, 6);
     ctx.fill();
 
-    // Border highlight
+    // Chassis border
     ctx.strokeStyle = '#ffffff';
-    ctx.lineWidth = 1.5;
+    ctx.lineWidth = 1.2;
     ctx.stroke();
 
-    // Laser cannons rendering
+    // Subtle center energy core
+    ctx.fillStyle = '#ffffff';
+    ctx.shadowColor = '#ffffff';
+    ctx.shadowBlur = 8;
+    ctx.fillRect(this.x + this.width / 2 - 10, drawY + 4, 20, 2);
+
+    // Twin Laser Turrets
     if (hasLaser) {
       ctx.fillStyle = '#ff007f';
       ctx.shadowColor = '#ff007f';
-      ctx.shadowBlur = 10;
-      // Left turret
-      ctx.fillRect(this.x + 4, this.y - 7, 6, 7);
-      // Right turret
-      ctx.fillRect(this.x + this.width - 10, this.y - 7, 6, 7);
+      ctx.shadowBlur = 12;
+      ctx.fillRect(this.x + 4, drawY - 7, 6, 7);
+      ctx.fillRect(this.x + this.width - 10, drawY - 7, 6, 7);
     }
 
-    // Render flying laser beams
+    // Flying plasma laser bolts
     ctx.fillStyle = '#ff007f';
     ctx.shadowColor = '#ff007f';
-    ctx.shadowBlur = 12;
+    ctx.shadowBlur = 14;
     for (const laser of this.lasers) {
       ctx.beginPath();
       ctx.roundRect(laser.x, laser.y, laser.width, laser.height, 2);

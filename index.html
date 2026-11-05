@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>BRICKER // Neon Arcade Brick Breaker</title>
+  <title>BRICKER // Tactical Neon Arcade</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Rajdhani:wght@600;700&display=swap" rel="stylesheet">
@@ -20,24 +20,44 @@
       <div class="hud-item combo-box">
         <span class="hud-label">COMBO</span>
         <span id="combo-val" class="hud-value neon-pink">x1</span>
+        <div class="combo-meter-container" title="Combo Multiplier Gauge">
+          <div id="combo-meter-bar" class="combo-meter-bar"></div>
+        </div>
       </div>
       <div class="hud-item level-box">
-        <span class="hud-label">LEVEL</span>
+        <span class="hud-label">SECTOR</span>
         <span id="level-val" class="hud-value neon-cyan">1</span>
       </div>
       <div class="hud-item lives-box">
-        <span class="hud-label">LIVES</span>
+        <span class="hud-label">SHIELD CELLS</span>
         <div id="lives-icons" class="hud-icons"></div>
       </div>
       <div class="hud-controls">
-        <button id="btn-sound" class="icon-btn" title="Toggle Sound (M)" aria-label="Toggle Sound">🔊</button>
-        <button id="btn-music" class="icon-btn" title="Toggle Music (N)" aria-label="Toggle Music">🎵</button>
-        <button id="btn-pause" class="icon-btn" title="Pause Game (P / Esc)" aria-label="Pause Game">⏸</button>
+        <button id="btn-sound" class="icon-btn" title="Toggle Sound (M)" aria-label="Toggle Sound">
+          <svg class="svg-icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+            <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+            <path class="sound-wave" d="M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+            <path class="sound-wave" d="M19.07 4.93a10 10 0 0 1 0 14.14"></path>
+          </svg>
+        </button>
+        <button id="btn-music" class="icon-btn" title="Toggle Music (N)" aria-label="Toggle Music">
+          <svg class="svg-icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M9 18V5l12-2v13"></path>
+            <circle cx="6" cy="18" r="3"></circle>
+            <circle cx="18" cy="16" r="3"></circle>
+          </svg>
+        </button>
+        <button id="btn-pause" class="icon-btn" title="Pause Game (P / Esc)" aria-label="Pause Game">
+          <svg class="svg-icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="6" y="4" width="4" height="16"></rect>
+            <rect x="14" y="4" width="4" height="16"></rect>
+          </svg>
+        </button>
       </div>
     </header>
 
     <!-- Active Power-ups Bar -->
-    <div id="powerup-tray" aria-label="Active Powerups"></div>
+    <div id="powerup-tray" aria-label="Active Tactical Powerups"></div>
 
     <!-- Main Game Canvas Container -->
     <div id="canvas-wrapper">
@@ -47,27 +67,29 @@
 
     <!-- Controls Helper Bar -->
     <footer id="footer-bar">
-      <span><kbd>←</kbd> <kbd>→</kbd> or Mouse: Move</span>
-      <span><kbd>Space</kbd> / Click: Launch / Fire</span>
+      <span><kbd>&larr;</kbd> <kbd>&rarr;</kbd> / Mouse: Steer</span>
+      <span><kbd>Space</kbd> / Click: Launch / Cannons</span>
       <span><kbd>P</kbd>: Pause</span>
-      <span><kbd>M</kbd>: Sound</span>
+      <span><kbd>M</kbd>: SFX</span>
+      <span><kbd>N</kbd>: Synth</span>
+      <span>Gamepad: Supported</span>
     </footer>
 
     <!-- Overlay: Main Menu -->
     <div id="screen-menu" class="overlay-screen active">
       <div class="menu-card glow-box">
         <h1 class="glitch-title" data-text="BRICKER">BRICKER</h1>
-        <p class="tagline">NEON ARCADE BRICK BREAKER</p>
+        <p class="tagline">TACTICAL NEON ARCADE</p>
         
         <div class="menu-high-score">
-          HIGH SCORE: <span id="menu-high-score-val" class="neon-gold">0</span>
+          ALL-TIME RECORD: <span id="menu-high-score-val" class="neon-gold">0</span>
         </div>
 
         <div class="menu-buttons">
-          <button id="btn-start" class="btn btn-primary">START GAME</button>
-          <button id="btn-level-select" class="btn btn-secondary">SELECT LEVEL</button>
-          <button id="btn-editor" class="btn btn-secondary">LEVEL EDITOR</button>
-          <button id="btn-how-to-play" class="btn btn-secondary">HOW TO PLAY</button>
+          <button id="btn-start" class="btn btn-primary">LAUNCH MISSION</button>
+          <button id="btn-level-select" class="btn btn-secondary">SECTOR SELECT</button>
+          <button id="btn-editor" class="btn btn-secondary">LEVEL DESIGNER</button>
+          <button id="btn-how-to-play" class="btn btn-secondary">TACTICAL BRIEFING</button>
         </div>
       </div>
     </div>
@@ -75,9 +97,9 @@
     <!-- Overlay: Level Select -->
     <div id="screen-levels" class="overlay-screen">
       <div class="menu-card glow-box">
-        <h2>SELECT MISSION</h2>
+        <h2>DEFENSE SECTORS</h2>
         <div id="level-grid" class="level-grid"></div>
-        <button id="btn-levels-back" class="btn btn-secondary">BACK TO MENU</button>
+        <button id="btn-levels-back" class="btn btn-secondary">RETURN TO MENU</button>
       </div>
     </div>
 
@@ -85,10 +107,10 @@
     <div id="screen-pause" class="overlay-screen">
       <div class="menu-card glow-box">
         <h2>SYSTEM PAUSED</h2>
-        <p class="pause-subtitle">Mission suspended</p>
+        <p class="pause-subtitle">Tactical simulation suspended</p>
         <div class="menu-buttons">
           <button id="btn-resume" class="btn btn-primary">RESUME</button>
-          <button id="btn-restart" class="btn btn-secondary">RESTART LEVEL</button>
+          <button id="btn-restart" class="btn btn-secondary">RESTART SECTOR</button>
           <button id="btn-quit" class="btn btn-danger">ABORT TO MENU</button>
         </div>
       </div>
@@ -97,14 +119,14 @@
     <!-- Overlay: Level Clear -->
     <div id="screen-clear" class="overlay-screen">
       <div class="menu-card glow-box">
-        <h2 class="neon-cyan">SECTOR CLEARED!</h2>
+        <h2 class="neon-cyan">SECTOR SECURED</h2>
         <div class="stats-grid">
-          <div>Level Score: <span id="clear-score" class="neon-pink">0</span></div>
-          <div>Max Combo: <span id="clear-combo" class="neon-gold">x0</span></div>
-          <div>Time Bonus: <span id="clear-time" class="neon-green">0</span></div>
+          <div>Sector Points: <span id="clear-score" class="neon-pink">0</span></div>
+          <div>Peak Multiplier: <span id="clear-combo" class="neon-gold">x1</span></div>
+          <div>Efficiency Bonus: <span id="clear-time" class="neon-green">0</span></div>
         </div>
         <div class="menu-buttons">
-          <button id="btn-next-level" class="btn btn-primary">NEXT SECTOR →</button>
+          <button id="btn-next-level" class="btn btn-primary">NEXT SECTOR [ENTER]</button>
         </div>
       </div>
     </div>
@@ -112,15 +134,15 @@
     <!-- Overlay: Game Over -->
     <div id="screen-gameover" class="overlay-screen">
       <div class="menu-card glow-box border-red">
-        <h2 class="neon-red">CRITICAL FAILURE</h2>
-        <p>Your paddle was destroyed.</p>
+        <h2 class="neon-red">HULL COMPROMISED</h2>
+        <p>All shield cells exhausted.</p>
         <div class="stats-grid">
           <div>Final Score: <span id="gameover-score" class="neon-pink">0</span></div>
-          <div>Bricks Smashed: <span id="gameover-bricks" class="neon-cyan">0</span></div>
+          <div>Bricks Neutralized: <span id="gameover-bricks" class="neon-cyan">0</span></div>
           <div>High Score: <span id="gameover-highscore" class="neon-gold">0</span></div>
         </div>
         <div class="menu-buttons">
-          <button id="btn-retry" class="btn btn-primary">TRY AGAIN</button>
+          <button id="btn-retry" class="btn btn-primary">REDEPLOY</button>
           <button id="btn-gameover-menu" class="btn btn-secondary">MAIN MENU</button>
         </div>
       </div>
@@ -129,45 +151,45 @@
     <!-- Overlay: Victory (All Levels Finished) -->
     <div id="screen-victory" class="overlay-screen">
       <div class="menu-card glow-box border-gold">
-        <h2 class="neon-gold">SYSTEM OVERLOADED!</h2>
-        <p>You have conquered all defense sectors!</p>
+        <h2 class="neon-gold">GRID DEFENSE COMPLETE</h2>
+        <p>All hostile sectors have been successfully neutralized.</p>
         <div class="stats-grid">
-          <div>Grand Score: <span id="victory-score" class="neon-gold">0</span></div>
+          <div>Campaign Score: <span id="victory-score" class="neon-gold">0</span></div>
         </div>
         <div class="menu-buttons">
-          <button id="btn-victory-replay" class="btn btn-primary">PLAY AGAIN</button>
+          <button id="btn-victory-replay" class="btn btn-primary">NEW CAMPAIGN</button>
           <button id="btn-victory-menu" class="btn btn-secondary">MAIN MENU</button>
         </div>
       </div>
     </div>
 
-    <!-- Overlay: How to Play / Guide -->
+    <!-- Overlay: Tactical Briefing / Guide -->
     <div id="screen-guide" class="overlay-screen">
       <div class="menu-card glow-box guide-card">
-        <h2>MISSION BRIEFING</h2>
+        <h2>TACTICAL BRIEFING</h2>
         <div class="guide-content">
           <div class="guide-section">
             <h3>OBJECTIVE</h3>
-            <p>Demolish all target bricks without letting the quantum energy sphere fall past your paddle defense.</p>
+            <p>Demolish all target defense bricks using the quantum energy sphere without allowing it to slip past your paddle baseline.</p>
           </div>
           <div class="guide-section">
-            <h3>POWER-UPS</h3>
+            <h3>TACTICAL UPGRADES</h3>
             <div class="powerup-legend">
-              <div><span class="badge p-multi">MULTI</span> Spawns 3 energy balls</div>
-              <div><span class="badge p-laser">LASER</span> Paddle mounted twin cannons (Space / Click)</div>
-              <div><span class="badge p-fire">FIRE</span> Sphere burns straight through all bricks</div>
-              <div><span class="badge p-wide">WIDE</span> Expands paddle shield width</div>
-              <div><span class="badge p-shield">BARRIER</span> Safety energy floor at the bottom</div>
-              <div><span class="badge p-slow">SLOW</span> Decelerates ball for precision control</div>
-              <div><span class="badge p-life">LIFE</span> Restores 1 destroyed life</div>
+              <div><span class="badge p-multi">MLT</span> Multi-Ball: Replicates sphere into 3 divergent energy projectiles</div>
+              <div><span class="badge p-laser">LSR</span> Laser Cannons: Mounts twin plasma blasters (Space / Click)</div>
+              <div><span class="badge p-fire">FIR</span> Fireball: Penetrates continuous brick formations without rebounding</div>
+              <div><span class="badge p-wide">WID</span> Broad Paddle: Expands defensive intercept area by 45%</div>
+              <div><span class="badge p-shield">SHD</span> Kinetic Barrier: Energy bottom floor absorbing emergency breaches</div>
+              <div><span class="badge p-slow">SLW</span> Time Dilation: Reduces sphere velocity for micro-precision</div>
+              <div><span class="badge p-life">LIF</span> Shield Cell: Restores 1 destroyed defensive integrity unit</div>
             </div>
           </div>
           <div class="guide-section">
-            <h3>BRICK TYPES</h3>
-            <p><strong>Neon:</strong> 1 hit | <strong>Reinforced:</strong> 2 hits | <strong>Armored:</strong> 3 hits | <strong>TNT:</strong> Explosive blast clears neighbors | <strong>Mystery:</strong> Guaranteed power-up drop</p>
+            <h3>BRICK COMPOSITION</h3>
+            <p><strong>Neon:</strong> 1 Hit | <strong>Reinforced:</strong> 2 Hits | <strong>Armored:</strong> 3 Hits | <strong>TNT:</strong> Radial blast wave clearing adjacent nodes | <strong>Mystery:</strong> Guaranteed tactical upgrade drop</p>
           </div>
         </div>
-        <button id="btn-guide-back" class="btn btn-primary">UNDERSTOOD</button>
+        <button id="btn-guide-back" class="btn btn-primary">ACKNOWLEDGED</button>
       </div>
     </div>
 
@@ -175,25 +197,37 @@
     <div id="screen-editor" class="overlay-screen">
       <div class="editor-container glow-box">
         <div class="editor-header">
-          <h2>LEVEL DESIGNER</h2>
+          <h2>SECTOR DESIGNER</h2>
           <div class="editor-palette">
-            <button class="palette-btn active" data-type="1" title="Neon Brick (1 Hit)">🟩 Neon</button>
-            <button class="palette-btn" data-type="2" title="Reinforced Brick (2 Hits)">🟦 Reinforced</button>
-            <button class="palette-btn" data-type="3" title="Armored Brick (3 Hits)">🟪 Armored</button>
-            <button class="palette-btn" data-type="4" title="TNT Explosive Brick">🟥 TNT</button>
-            <button class="palette-btn" data-type="5" title="Mystery Power-up Brick">🟨 Mystery</button>
-            <button class="palette-btn" data-type="0" title="Eraser">✖ Clear</button>
+            <button class="palette-btn active" data-type="1" title="Neon Brick (1 Hit)">
+              <span class="palette-swatch swatch-neon"></span> Neon
+            </button>
+            <button class="palette-btn" data-type="2" title="Reinforced Brick (2 Hits)">
+              <span class="palette-swatch swatch-reinforced"></span> Reinforced
+            </button>
+            <button class="palette-btn" data-type="3" title="Armored Brick (3 Hits)">
+              <span class="palette-swatch swatch-armored"></span> Armored
+            </button>
+            <button class="palette-btn" data-type="4" title="TNT Explosive Brick">
+              <span class="palette-swatch swatch-tnt"></span> TNT
+            </button>
+            <button class="palette-btn" data-type="5" title="Mystery Power-up Brick">
+              <span class="palette-swatch swatch-mystery"></span> Mystery
+            </button>
+            <button class="palette-btn" data-type="0" title="Eraser">
+              <span class="palette-swatch swatch-clear"></span> Clear
+            </button>
           </div>
         </div>
         
         <canvas id="editor-canvas" width="800" height="380"></canvas>
         
         <div class="editor-actions">
-          <button id="btn-editor-play" class="btn btn-primary">TEST PLAY</button>
+          <button id="btn-editor-play" class="btn btn-primary">SIMULATE</button>
           <button id="btn-editor-clear" class="btn btn-danger">CLEAR GRID</button>
           <button id="btn-editor-export" class="btn btn-secondary">EXPORT JSON</button>
           <button id="btn-editor-import" class="btn btn-secondary">IMPORT JSON</button>
-          <button id="btn-editor-exit" class="btn btn-secondary">EXIT EDITOR</button>
+          <button id="btn-editor-exit" class="btn btn-secondary">EXIT DESIGNER</button>
         </div>
       </div>
     </div>

@@ -1,13 +1,6 @@
 /**
  * Level Definitions & Procedural Generator for BRICKER.
- * 
- * Brick Types:
- * 0 = Empty
- * 1 = Standard Neon Brick (1 Hit)
- * 2 = Reinforced Brick (2 Hits)
- * 3 = Armored Brick (3 Hits)
- * 4 = TNT Explosive Brick (Clears 3x3 surrounding zone)
- * 5 = Mystery Brick (Guaranteed Power-up drop)
+ * Zero emojis. Standard clean architecture.
  */
 
 export const BRICK_COLORS = {
@@ -50,7 +43,7 @@ export const LEVELS = [
     ]
   },
   {
-    name: "Sector 4: Space Invader",
+    name: "Sector 4: Space Vanguard",
     grid: [
       [0, 0, 1, 0, 0, 0, 0, 1, 0, 0],
       [0, 0, 0, 1, 0, 0, 1, 0, 0, 0],
@@ -162,13 +155,19 @@ export function parseLevelGrid(grid, canvasWidth = 800) {
         type,
         x: offsetX + c * (brickWidth + gapX),
         y: offsetY + r * (brickHeight + gapY),
+        baseX: offsetX + c * (brickWidth + gapX),
         width: brickWidth,
         height: brickHeight,
         hitsLeft: maxHits,
         maxHits,
         score,
         color,
-        destroyed: false
+        destroyed: false,
+        // In sector 5/6, some armored bricks oscillate horizontally
+        moving: (r === 0 && (c === 0 || c === 9)),
+        moveDir: 1,
+        moveRange: 24,
+        moveOffset: 0
       });
     }
   }

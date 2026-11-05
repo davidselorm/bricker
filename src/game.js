@@ -1,5 +1,6 @@
 /**
- * Core Game Engine for BRICKER.
+ * Core Tactical Game Engine for BRICKER.
+ * Zero emojis. Gamepad API, Combo Gauge, Moving Hazards & Dynamic Warp.
  */
 import { Paddle } from './paddle.js';
 import { Ball } from './ball.js';
@@ -27,7 +28,7 @@ export class Game {
     this.state = GAME_STATES.MENU;
     this.score = 0;
     this.highScore = parseInt(localStorage.getItem('bricker_highscore') || '0', 10);
-    this.lives = 3;
+    this.lives = 4;
     this.maxLives = 5;
     this.currentLevelIndex = 0;
     this.combo = 1;
@@ -41,7 +42,7 @@ export class Game {
     // Subsystems
     this.paddle = new Paddle(this.width, this.height);
     this.balls = [];
-    this.particles = new ParticleEngine();
+    this.particles = new ParticleEngine(this.width, this.height);
     this.powerups = new PowerupManager();
     this.bricks = [];
 
@@ -62,23 +63,27 @@ export class Game {
       if (e.code === 'KeyM') {
         const soundOn = audio.toggleSound();
         const btn = document.getElementById('btn-sound');
-        if (btn) btn.textContent = soundOn ? '🔊' : '🔇';
+        if (btn) btn.classList.toggle('muted', !soundOn);
       }
 
       if (e.code === 'KeyN') {
         const musicOn = audio.toggleMusic();
         const btn = document.getElementById('btn-music');
-        if (btn) btn.textContent = musicOn ? '🎵' : '🔇';
+        if (btn) btn.classList.toggle('muted', !musicOn);
       }
 
       if (e.code === 'Space') {
         if (this.state === GAME_STATES.PLAYING) {
-          // Launch attached ball
           this.balls.forEach(b => b.launch(this.paddle));
-          // Fire lasers if active
           if (this.powerups.hasEffect('laser')) {
             this.paddle.fireLaser(audio);
           }
+        }
+      }
+
+      if (e.code === 'Enter') {
+        if (this.state === GAME_STATES.LEVEL_CLEAR) {
+          this.nextLevel();
         }
       }
     });
@@ -87,7 +92,7 @@ export class Game {
       this.keys[e.code] = false;
     });
 
-    // Mouse movement on canvas
+    // Mouse movement
     this.canvas.addEventListener('mousemove', (e) => {
       if (this.state !== GAME_STATES.PLAYING) return;
       const rect = this.canvas.getBoundingClientRect();
@@ -96,7 +101,7 @@ export class Game {
       this.paddle.setTargetX(mouseX);
     });
 
-    // Mouse click on canvas to launch/fire
+    // Mouse click
     this.canvas.addEventListener('mousedown', (e) => {
       if (e.button === 0 && this.state === GAME_STATES.PLAYING) {
         this.balls.forEach(b => b.launch(this.paddle));
@@ -106,7 +111,7 @@ export class Game {
       }
     });
 
-    // Touch support for mobile / tablets
+    // Touch support
     this.canvas.addEventListener('touchmove', (e) => {
       if (this.state !== GAME_STATES.PLAYING) return;
       e.preventDefault();
@@ -126,9 +131,43 @@ export class Game {
     });
   }
 
+  pollGamepad(dt) {
+    const gamepads = navigator.getGamepads ? navigator.getGamepads() : [];
+    if (!gamepads) return;
+
+    for (const gp of gamepads) {
+      if (!gp) continue;
+
+      // Stick X
+      const stickX = gp.axes[0] || 0;
+      if (Math.abs(stickX) > 0.15) {
+        this.paddle.targetX += stickX * this.paddle.speed * dt;
+        this.paddle.targetX = Math.max(0, Math.min(this.width - this.paddle.width, this.paddle.targetX));
+      }
+
+      // D-Pad
+      if (gp.buttons[14]?.pressed) this.paddle.moveLeft(dt);
+      if (gp.buttons[15]?.pressed) this.paddle.moveRight(dt);
+
+      // A Button (0) or Right Trigger (7)
+      if (gp.buttons[0]?.pressed || gp.buttons[7]?.pressed) {
+        this.balls.forEach(b => b.launch(this.paddle));
+        if (this.powerups.hasEffect('laser')) {
+          this.paddle.fireLaser(audio);
+        }
+      }
+
+      // Start Button (9)
+      if (gp.buttons[9]?.pressed) {
+        this.togglePause();
+      }
+      break;
+    }
+  }
+
   startNewGame(levelIndex = 0) {
     this.score = 0;
-    this.lives = 3;
+    this.lives = 4;
     this.currentLevelIndex = levelIndex;
     this.customLevel = null;
     this.totalBricksBroken = 0;
@@ -138,7 +177,7 @@ export class Game {
 
   playCustomLevel(customLevelData) {
     this.score = 0;
-    this.lives = 3;
+    this.lives = 4;
     this.customLevel = customLevelData;
     this.loadLevelData(customLevelData);
     this.setState(GAME_STATES.PLAYING);
@@ -177,13 +216,11 @@ export class Game {
 
   nextLevel() {
     if (this.customLevel) {
-      // Returned from custom level
       this.setState(GAME_STATES.MENU);
       return;
     }
     this.currentLevelIndex++;
     if (this.currentLevelIndex >= LEVELS.length) {
-      // Completed all story levels!
       this.setState(GAME_STATES.VICTORY);
       audio.playLevelComplete();
     } else {
@@ -203,7 +240,6 @@ export class Game {
   setState(newState) {
     this.state = newState;
 
-    // Toggle UI overlays
     const screens = {
       [GAME_STATES.MENU]: 'screen-menu',
       [GAME_STATES.PAUSED]: 'screen-pause',
@@ -260,7 +296,10 @@ export class Game {
   update(dt) {
     if (this.state !== GAME_STATES.PLAYING) return;
 
-    // Handle Keyboard paddle control
+    // Gamepad controller input
+    this.pollGamepad(dt);
+
+    // Keyboard paddle control
     if (this.keys['ArrowLeft'] || this.keys['KeyA']) {
       this.paddle.moveLeft(dt);
     }
@@ -271,10 +310,20 @@ export class Game {
     // Update paddle
     this.paddle.update(dt, this.powerups);
 
+    // Update moving hazard bricks
+    for (const b of this.bricks) {
+      if (b.moving && !b.destroyed) {
+        b.moveOffset += b.moveDir * dt * 40;
+        if (Math.abs(b.moveOffset) > b.moveRange) {
+          b.moveDir *= -1;
+        }
+        b.x = b.baseX + b.moveOffset;
+      }
+    }
+
     // Update balls
     for (let i = this.balls.length - 1; i >= 0; i--) {
       const ball = this.balls[i];
-      const wasStuck = ball.stuckToPaddle;
       ball.update(dt, this.paddle, this.powerups, this.particles, audio);
 
       // Check ball collisions with bricks
@@ -300,7 +349,6 @@ export class Game {
         this.setState(GAME_STATES.GAMEOVER);
         return;
       } else {
-        // Respawn single ball attached to paddle
         const ball = new Ball(this.width, this.height);
         ball.attachToPaddle(this.paddle);
         this.balls = [ball];
@@ -310,7 +358,7 @@ export class Game {
     // Update power-up drops & timers
     this.powerups.update(dt, this.paddle, (type, x, y) => {
       audio.playPowerupCollect();
-      this.particles.addFloatingText(`+${type.label}!`, x, y, type.color);
+      this.particles.addFloatingText(`[${type.label}]`, x, y, type.color);
       this.particles.addSparks(x, y, type.color, 15);
 
       if (type.id === 'multiball') {
@@ -322,8 +370,8 @@ export class Game {
       }
     });
 
-    // Update FX
-    this.particles.update(dt);
+    // Update FX & Warp Starfield
+    this.particles.update(dt, this.combo);
 
     // Check level complete
     const remainingBricks = this.bricks.filter(b => !b.destroyed);
@@ -340,11 +388,11 @@ export class Game {
     const newBalls = [];
     for (const b of this.balls) {
       if (b.stuckToPaddle) continue;
-      // Spawn two new angled copies
       [-0.45, 0.45].forEach(angleOffset => {
         const extraBall = new Ball(this.width, this.height);
         extraBall.x = b.x;
         extraBall.y = b.y;
+        extraBall.speed = b.speed;
         extraBall.stuckToPaddle = false;
 
         const currentAngle = Math.atan2(b.vx, -b.vy);
@@ -364,7 +412,6 @@ export class Game {
     for (const brick of this.bricks) {
       if (brick.destroyed) continue;
 
-      // Circle-AABB collision check
       const closestX = Math.max(brick.x, Math.min(ball.x, brick.x + brick.width));
       const closestY = Math.max(brick.y, Math.min(ball.y, brick.y + brick.height));
       const distX = ball.x - closestX;
@@ -372,10 +419,9 @@ export class Game {
       const distSq = distX * distX + distY * distY;
 
       if (distSq <= ball.radius * ball.radius) {
-        // Hit!
         this.damageBrick(brick, isFireball ? 99 : 1);
+        ball.accelerate(1.012);
 
-        // If not fireball, reflect ball velocity
         if (!isFireball) {
           const overlapX = ball.radius - Math.abs(distX);
           const overlapY = ball.radius - Math.abs(distY);
@@ -385,7 +431,7 @@ export class Game {
           } else {
             ball.vy = distY > 0 ? Math.abs(ball.vy) : -Math.abs(ball.vy);
           }
-          break; // Only bounce off first brick per frame
+          break;
         }
       }
     }
@@ -426,7 +472,6 @@ export class Game {
       this.bricksBrokenInLevel++;
       this.totalBricksBroken++;
 
-      // Increase combo
       this.combo++;
       if (this.combo > this.maxComboInLevel) {
         this.maxComboInLevel = this.combo;
@@ -442,9 +487,7 @@ export class Game {
         brick.color
       );
 
-      // Sound
       if (brick.type === 4) {
-        // TNT detonation
         audio.playTntExplosion();
         this.particles.addTntExplosion(brick.x + brick.width / 2, brick.y + brick.height / 2);
         this.triggerTntExplosion(brick);
@@ -454,16 +497,12 @@ export class Game {
         this.particles.addBrickExplosion(brick.x, brick.y, brick.width, brick.height, brick.color);
       }
 
-      // Check power-up drop
       if (brick.type === 5) {
-        // Guaranteed drop
         this.powerups.spawnDrop(brick.x + brick.width / 2, brick.y + brick.height / 2);
       } else if (Math.random() < 0.22) {
-        // 22% drop rate for other bricks
         this.powerups.spawnDrop(brick.x + brick.width / 2, brick.y + brick.height / 2);
       }
     } else {
-      // Brick damaged but not destroyed
       audio.playBrickHit(this.combo);
       this.particles.addSparks(brick.x + brick.width / 2, brick.y + brick.height / 2, brick.color, 6);
     }
@@ -481,7 +520,6 @@ export class Game {
       const dist = Math.hypot(bx - centerX, by - centerY);
 
       if (dist <= explosionRadius) {
-        // Blast neighboring bricks
         this.damageBrick(b, 3);
       }
     }
@@ -494,10 +532,13 @@ export class Game {
 
     this.ctx.clearRect(-20, -20, this.width + 40, this.height + 40);
 
-    // Draw Cyberpunk Grid Floor lines at bottom
+    // Draw Warp Stars
+    this.particles.drawBackgroundStars(this.ctx);
+
+    // Draw Cyberpunk Floor Lines
     this.drawBackgroundGrid();
 
-    // Draw Bottom Shield Barrier if active
+    // Draw Kinetic Shield Floor
     if (this.powerups.hasEffect('shield')) {
       this.drawSafetyShield();
     }
@@ -524,10 +565,9 @@ export class Game {
 
   drawBackgroundGrid() {
     this.ctx.save();
-    this.ctx.strokeStyle = 'rgba(0, 240, 255, 0.04)';
+    this.ctx.strokeStyle = 'rgba(0, 240, 255, 0.05)';
     this.ctx.lineWidth = 1;
 
-    // Subtle horizontal scanlines
     for (let y = 0; y < this.height; y += 40) {
       this.ctx.beginPath();
       this.ctx.moveTo(0, y);
@@ -544,7 +584,7 @@ export class Game {
     this.ctx.shadowColor = '#9d00ff';
     this.ctx.shadowBlur = 15;
 
-    const y = this.height - 10;
+    const y = this.height - 12;
     this.ctx.beginPath();
     this.ctx.moveTo(0, y);
     this.ctx.lineTo(this.width, y);
@@ -561,18 +601,17 @@ export class Game {
       this.ctx.shadowBlur = 8;
       this.ctx.fillStyle = b.color;
 
-      // Draw brick body with rounded corners
       this.ctx.beginPath();
       this.ctx.roundRect(b.x, b.y, b.width, b.height, 4);
       this.ctx.fill();
 
-      // Top-left shiny highlight
+      // Top shine
       this.ctx.fillStyle = 'rgba(255, 255, 255, 0.35)';
       this.ctx.beginPath();
       this.ctx.roundRect(b.x + 2, b.y + 2, b.width - 4, 3, 2);
       this.ctx.fill();
 
-      // Damage crack line if reinforced/armored
+      // Fracture cracks
       if (b.hitsLeft < b.maxHits) {
         this.ctx.strokeStyle = '#050510';
         this.ctx.lineWidth = 2;
@@ -583,13 +622,13 @@ export class Game {
         this.ctx.stroke();
       }
 
-      // Brick Labels (TNT / ?)
+      // Alphanumeric Labels
       if (b.type === 4 || b.type === 5) {
         this.ctx.fillStyle = '#ffffff';
-        this.ctx.font = 'bold 10px Orbitron, sans-serif';
+        this.ctx.font = '700 10px Orbitron, sans-serif';
         this.ctx.textAlign = 'center';
         this.ctx.textBaseline = 'middle';
-        this.ctx.fillText(b.type === 4 ? 'TNT' : '?', b.x + b.width / 2, b.y + b.height / 2 + 1);
+        this.ctx.fillText(b.type === 4 ? 'TNT' : 'POW', b.x + b.width / 2, b.y + b.height / 2 + 1);
       }
 
       this.ctx.restore();
@@ -605,20 +644,27 @@ export class Game {
     const comboEl = document.getElementById('combo-val');
     if (comboEl) comboEl.textContent = `x${this.combo}`;
 
-    // Level
+    // Combo meter bar
+    const meterBar = document.getElementById('combo-meter-bar');
+    if (meterBar) {
+      const fillPct = Math.min(100, (this.combo / 10) * 100);
+      meterBar.style.width = `${fillPct}%`;
+    }
+
+    // Sector
     const levelEl = document.getElementById('level-val');
     if (levelEl) {
       levelEl.textContent = this.customLevel ? 'CUSTOM' : (this.currentLevelIndex + 1);
     }
 
-    // Lives
+    // Shield Cells (Lives)
     const livesBox = document.getElementById('lives-icons');
     if (livesBox) {
       livesBox.innerHTML = '';
-      for (let i = 0; i < this.lives; i++) {
-        const heart = document.createElement('span');
-        heart.className = 'heart-icon';
-        livesBox.appendChild(heart);
+      for (let i = 0; i < this.maxLives; i++) {
+        const cell = document.createElement('span');
+        cell.className = `energy-cell ${i >= this.lives ? 'depleted' : ''}`;
+        livesBox.appendChild(cell);
       }
     }
 
@@ -630,7 +676,7 @@ export class Game {
         const pill = document.createElement('div');
         pill.className = 'powerup-pill';
         const label = id.toUpperCase();
-        const durationText = timeLeft < 9000 ? ` (${Math.ceil(timeLeft)}s)` : '';
+        const durationText = timeLeft < 9000 ? ` [${Math.ceil(timeLeft)}s]` : '';
         pill.textContent = `${label}${durationText}`;
         pill.style.color = '#fff';
         pill.style.borderColor = '#00f0ff';

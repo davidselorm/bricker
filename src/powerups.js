@@ -1,53 +1,54 @@
 /**
- * Power-up System for BRICKER.
+ * Tactical Power-up Subsystem for BRICKER.
+ * Uses clean standard alphanumeric badges with zero emojis.
  */
 export const POWERUP_TYPES = {
   MULTIBALL: {
     id: 'multiball',
-    label: 'MULTI',
-    icon: '⚡',
+    label: 'MLT',
+    fullName: 'MULTI-BALL',
     color: '#00f0ff',
     duration: 0 // Instant trigger
   },
   LASER: {
     id: 'laser',
-    label: 'LASER',
-    icon: '🚀',
+    label: 'LSR',
+    fullName: 'PLASMA CANNONS',
     color: '#ff007f',
     duration: 14 // 14 seconds
   },
   FIREBALL: {
     id: 'fireball',
-    label: 'FIRE',
-    icon: '🔥',
+    label: 'FIR',
+    fullName: 'FIREBALL PENETRATION',
     color: '#ff4500',
     duration: 12 // 12 seconds
   },
   WIDE: {
     id: 'wide',
-    label: 'WIDE',
-    icon: '↔️',
+    label: 'WID',
+    fullName: 'BROAD PADDLE',
     color: '#00ff88',
     duration: 16 // 16 seconds
   },
   SHIELD: {
     id: 'shield',
-    label: 'SHIELD',
-    icon: '🛡️',
+    label: 'SHD',
+    fullName: 'KINETIC BARRIER',
     color: '#9d00ff',
     duration: 0 // Stays until consumed or level end
   },
   SLOW: {
     id: 'slow',
-    label: 'SLOW',
-    icon: '⏱️',
+    label: 'SLW',
+    fullName: 'TIME DILATION',
     color: '#ffd700',
     duration: 12 // 12 seconds
   },
   LIFE: {
     id: 'life',
-    label: 'LIFE',
-    icon: '❤️',
+    label: 'LIF',
+    fullName: 'SHIELD CELL',
     color: '#ff3344',
     duration: 0 // Instant
   }
@@ -72,11 +73,11 @@ export class PowerupManager {
     this.drops.push({
       x,
       y,
-      width: 44,
-      height: 22,
-      vy: 130, // Fall speed pixels/s
+      width: 48,
+      height: 20,
+      vy: 135, // Fall speed pixels/s
       type: pType,
-      pulse: 0
+      pulse: Math.random() * Math.PI
     });
   }
 
@@ -97,7 +98,7 @@ export class PowerupManager {
     for (let i = this.drops.length - 1; i >= 0; i--) {
       const drop = this.drops[i];
       drop.y += drop.vy * dt;
-      drop.pulse += dt * 5;
+      drop.pulse += dt * 4;
 
       // Check collision with paddle
       if (
@@ -114,7 +115,7 @@ export class PowerupManager {
       }
 
       // Despawn if fallen off screen
-      if (drop.y > 650) {
+      if (drop.y > 640) {
         this.drops.splice(i, 1);
       }
     }
@@ -139,16 +140,16 @@ export class PowerupManager {
   draw(ctx) {
     ctx.save();
     for (const drop of this.drops) {
-      const glow = Math.sin(drop.pulse) * 4 + 8;
+      const glow = Math.sin(drop.pulse) * 3 + 8;
       ctx.shadowColor = drop.type.color;
       ctx.shadowBlur = glow;
 
-      // Capsule body
-      ctx.fillStyle = 'rgba(10, 10, 25, 0.9)';
+      // Outer tactical capsule
+      ctx.fillStyle = 'rgba(8, 8, 20, 0.95)';
       ctx.strokeStyle = drop.type.color;
-      ctx.lineWidth = 2;
+      ctx.lineWidth = 1.5;
 
-      const r = drop.height / 2;
+      const r = 5;
       const left = drop.x - drop.width / 2;
       const top = drop.y - drop.height / 2;
 
@@ -157,9 +158,13 @@ export class PowerupManager {
       ctx.fill();
       ctx.stroke();
 
-      // Capsule text/badge
+      // Side marker pips
       ctx.fillStyle = drop.type.color;
-      ctx.font = 'bold 11px Orbitron, sans-serif';
+      ctx.fillRect(left + 2, top + 3, 2, drop.height - 6);
+      ctx.fillRect(left + drop.width - 4, top + 3, 2, drop.height - 6);
+
+      // Clean Alphanumeric Tactical Label
+      ctx.font = '700 11px Orbitron, sans-serif';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
       ctx.fillText(drop.type.label, drop.x, drop.y + 1);

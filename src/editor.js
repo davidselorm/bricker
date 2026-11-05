@@ -1,5 +1,6 @@
 /**
  * Built-in Interactive Level Editor for BRICKER.
+ * Clean alphanumeric markers with zero emojis.
  */
 import { BRICK_COLORS } from './levels.js';
 
@@ -80,14 +81,14 @@ export class LevelEditor {
   exportJSON() {
     const jsonStr = JSON.stringify(this.grid, null, 2);
     navigator.clipboard.writeText(jsonStr).then(() => {
-      alert("Custom level JSON copied to clipboard!");
+      alert("Sector configuration JSON copied to clipboard.");
     }).catch(() => {
-      prompt("Copy your custom level JSON:", jsonStr);
+      prompt("Copy sector configuration JSON:", jsonStr);
     });
   }
 
   importJSON() {
-    const input = prompt("Paste your custom level JSON grid:");
+    const input = prompt("Paste sector configuration JSON grid:");
     if (!input) return;
     try {
       const parsed = JSON.parse(input);
@@ -96,7 +97,7 @@ export class LevelEditor {
         this.rows = parsed.length;
         this.render();
       } else {
-        alert("Invalid level data structure.");
+        alert("Invalid sector data format.");
       }
     } catch (err) {
       alert("Failed to parse JSON: " + err.message);
@@ -104,10 +105,9 @@ export class LevelEditor {
   }
 
   play() {
-    // Check if grid has at least one brick
     const hasBricks = this.grid.some(row => row.some(cell => cell > 0));
     if (!hasBricks) {
-      alert("Please place some bricks first before testing!");
+      alert("Please construct at least one defense brick before simulating.");
       return;
     }
     if (this.onPlayCustomLevel) {
@@ -121,7 +121,6 @@ export class LevelEditor {
   render() {
     this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
 
-    // Draw grid slots
     for (let r = 0; r < this.rows; r++) {
       for (let c = 0; c < this.cols; c++) {
         const bx = this.offsetX + c * (this.brickWidth + this.gapX);
@@ -129,18 +128,16 @@ export class LevelEditor {
         const type = this.grid[r][c];
 
         if (type === 0) {
-          // Empty slot placeholder
           this.ctx.strokeStyle = 'rgba(255, 255, 255, 0.08)';
           this.ctx.lineWidth = 1;
           this.ctx.strokeRect(bx, by, this.brickWidth, this.brickHeight);
         } else {
-          // Colored Brick
           let color = BRICK_COLORS[1][r % BRICK_COLORS[1].length];
           let label = '';
           if (type === 2) { color = BRICK_COLORS[2]; label = '2'; }
           if (type === 3) { color = BRICK_COLORS[3]; label = '3'; }
           if (type === 4) { color = BRICK_COLORS[4]; label = 'TNT'; }
-          if (type === 5) { color = BRICK_COLORS[5]; label = '?'; }
+          if (type === 5) { color = BRICK_COLORS[5]; label = 'POW'; }
 
           this.ctx.save();
           this.ctx.shadowColor = color;
@@ -150,7 +147,7 @@ export class LevelEditor {
 
           if (label) {
             this.ctx.fillStyle = '#ffffff';
-            this.ctx.font = 'bold 10px Orbitron, sans-serif';
+            this.ctx.font = '700 10px Orbitron, sans-serif';
             this.ctx.textAlign = 'center';
             this.ctx.textBaseline = 'middle';
             this.ctx.fillText(label, bx + this.brickWidth / 2, by + this.brickHeight / 2);

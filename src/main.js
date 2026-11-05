@@ -1,5 +1,6 @@
 /**
  * Entry Point for BRICKER.
+ * Zero emojis. SVG-driven audio/state control.
  */
 import { Game, GAME_STATES } from './game.js';
 import { LevelEditor } from './editor.js';
@@ -14,7 +15,6 @@ window.addEventListener('DOMContentLoaded', () => {
 
   // Setup Level Editor
   const editor = new LevelEditor(editorCanvas, (customLevelData) => {
-    // Hide editor modal and launch custom game
     document.getElementById('screen-editor').classList.remove('active');
     game.playCustomLevel(customLevelData);
   });
@@ -138,24 +138,24 @@ window.addEventListener('DOMContentLoaded', () => {
     game.setState(GAME_STATES.MENU);
   });
 
-  // Sound and Music Toggles
+  // Sound and Music Toggles with SVG styling
   const btnSound = document.getElementById('btn-sound');
   btnSound?.addEventListener('click', () => {
     const on = audio.toggleSound();
-    btnSound.textContent = on ? '🔊' : '🔇';
+    btnSound.classList.toggle('muted', !on);
   });
 
   const btnMusic = document.getElementById('btn-music');
   btnMusic?.addEventListener('click', () => {
     const on = audio.toggleMusic();
-    btnMusic.textContent = on ? '🎵' : '🔇';
+    btnMusic.classList.toggle('muted', !on);
   });
 
   // --- GAME LOOP ---
   let lastTime = performance.now();
 
   function gameLoop(currentTime) {
-    const dt = Math.min((currentTime - lastTime) / 1000, 0.1); // Clamp dt to prevent spiral
+    const dt = Math.min((currentTime - lastTime) / 1000, 0.1);
     lastTime = currentTime;
 
     game.update(dt);

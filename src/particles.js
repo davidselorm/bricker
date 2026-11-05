@@ -1,12 +1,32 @@
 /**
- * Particle and Visual FX Engine for BRICKER.
+ * Upgraded FX Engine with Warp Starfield & Particle Physics for BRICKER.
  */
 export class ParticleEngine {
-  constructor() {
+  constructor(canvasWidth = 800, canvasHeight = 600) {
+    this.canvasWidth = canvasWidth;
+    this.canvasHeight = canvasHeight;
     this.particles = [];
     this.floatingTexts = [];
+    this.shockwaves = [];
     this.shakeDuration = 0;
     this.shakeIntensity = 0;
+
+    // Warp Starfield
+    this.stars = [];
+    this.initStars(55);
+  }
+
+  initStars(count) {
+    this.stars = [];
+    for (let i = 0; i < count; i++) {
+      this.stars.push({
+        x: Math.random() * this.canvasWidth,
+        y: Math.random() * this.canvasHeight,
+        speed: Math.random() * 25 + 15,
+        size: Math.random() * 1.5 + 0.8,
+        alpha: Math.random() * 0.6 + 0.2
+      });
+    }
   }
 
   triggerShake(intensity = 6, duration = 0.25) {
@@ -14,12 +34,32 @@ export class ParticleEngine {
     this.shakeDuration = Math.max(this.shakeDuration, duration);
   }
 
-  update(dt) {
+  update(dt, combo = 1) {
+    // Update warp starfield (speed scales with combo)
+    const warpMultiplier = Math.min(4, 1 + (combo - 1) * 0.25);
+    for (const star of this.stars) {
+      star.y += star.speed * warpMultiplier * dt;
+      if (star.y > this.canvasHeight) {
+        star.y = 0;
+        star.x = Math.random() * this.canvasWidth;
+      }
+    }
+
     // Screen shake update
     if (this.shakeDuration > 0) {
       this.shakeDuration -= dt;
       if (this.shakeDuration <= 0) {
         this.shakeIntensity = 0;
+      }
+    }
+
+    // Update shockwaves
+    for (let i = this.shockwaves.length - 1; i >= 0; i--) {
+      const sw = this.shockwaves[i];
+      sw.radius += sw.speed * dt;
+      sw.alpha -= dt * 1.8;
+      if (sw.alpha <= 0) {
+        this.shockwaves.splice(i, 1);
       }
     }
 
@@ -48,7 +88,7 @@ export class ParticleEngine {
       ft.y -= ft.speed * dt;
       ft.life -= dt;
       ft.alpha = Math.max(0, ft.life / ft.maxLife);
-      ft.scale = 1 + (1 - ft.alpha) * 0.3;
+      ft.scale = 1 + (1 - ft.alpha) * 0.35;
 
       if (ft.life <= 0) {
         this.floatingTexts.splice(i, 1);
@@ -56,8 +96,34 @@ export class ParticleEngine {
     }
   }
 
+  drawBackgroundStars(ctx) {
+    ctx.save();
+    for (const star of this.stars) {
+      ctx.fillStyle = '#00f0ff';
+      ctx.globalAlpha = star.alpha;
+      ctx.beginPath();
+      ctx.arc(star.x, star.y, star.size, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.restore();
+  }
+
   draw(ctx) {
     ctx.save();
+
+    // Render shockwave rings
+    for (const sw of this.shockwaves) {
+      ctx.save();
+      ctx.strokeStyle = sw.color;
+      ctx.globalAlpha = Math.max(0, sw.alpha);
+      ctx.lineWidth = sw.lineWidth;
+      ctx.shadowColor = sw.color;
+      ctx.shadowBlur = 15;
+      ctx.beginPath();
+      ctx.arc(sw.x, sw.y, sw.radius, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.restore();
+    }
 
     // Render particles
     for (const p of this.particles) {
@@ -85,7 +151,7 @@ export class ParticleEngine {
       ctx.fillStyle = ft.color;
       ctx.shadowColor = ft.color;
       ctx.shadowBlur = 12;
-      ctx.font = `${ft.bold ? 'bold ' : ''}${Math.round(ft.size * ft.scale)}px 'Orbitron', monospace`;
+      ctx.font = `${ft.bold ? '700 ' : ''}${Math.round(ft.size * ft.scale)}px 'Orbitron', monospace`;
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
       ctx.fillText(ft.text, ft.x, ft.y);
@@ -120,10 +186,21 @@ export class ParticleEngine {
 
   addTntExplosion(centerX, centerY) {
     this.triggerShake(14, 0.4);
-    // Fiery shockwave particles
-    for (let i = 0; i < 45; i++) {
+
+    // Expanding shockwave ring
+    this.shockwaves.push({
+      x: centerX,
+      y: centerY,
+      radius: 10,
+      speed: 380,
+      alpha: 1,
+      lineWidth: 3,
+      color: '#ff3344'
+    });
+
+    for (let i = 0; i < 48; i++) {
       const angle = Math.random() * Math.PI * 2;
-      const speed = Math.random() * 400 + 100;
+      const speed = Math.random() * 420 + 100;
       const life = Math.random() * 0.6 + 0.4;
       const colors = ['#ff2200', '#ff7700', '#ffee00', '#ffffff'];
       const color = colors[Math.floor(Math.random() * colors.length)];
@@ -147,7 +224,7 @@ export class ParticleEngine {
   addSparks(x, y, color = '#00f0ff', count = 8) {
     for (let i = 0; i < count; i++) {
       const angle = Math.random() * Math.PI * 2;
-      const speed = Math.random() * 150 + 50;
+      const speed = Math.random() * 160 + 50;
       const life = Math.random() * 0.25 + 0.15;
       this.particles.push({
         x,
@@ -174,7 +251,7 @@ export class ParticleEngine {
       color,
       size,
       bold,
-      speed: 40,
+      speed: 42,
       life: 0.8,
       maxLife: 0.8,
       alpha: 1,
@@ -184,11 +261,11 @@ export class ParticleEngine {
 
   addCelebration(width, height) {
     const colors = ['#00f0ff', '#ff007f', '#ffd700', '#00ff88', '#9d00ff'];
-    for (let i = 0; i < 70; i++) {
+    for (let i = 0; i < 80; i++) {
       const x = Math.random() * width;
       const y = Math.random() * (height * 0.6);
       const angle = Math.random() * Math.PI * 2;
-      const speed = Math.random() * 250 + 60;
+      const speed = Math.random() * 260 + 70;
       const life = Math.random() * 1.2 + 0.6;
       this.particles.push({
         x,
@@ -221,6 +298,7 @@ export class ParticleEngine {
   clear() {
     this.particles = [];
     this.floatingTexts = [];
+    this.shockwaves = [];
     this.shakeDuration = 0;
     this.shakeIntensity = 0;
   }
