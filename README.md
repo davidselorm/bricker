@@ -2,12 +2,20 @@
 
 > Tactical Neon Arcade Brick-Breaker engineered with pure Vanilla JavaScript, HTML5 Canvas, and procedural Web Audio API. Zero external runtime dependencies.
 
+[![Live Demo](https://img.shields.io/badge/Demo-Vercel_Live-00f0ff?style=for-the-badge&logo=vercel)](https://bricker-gamma.vercel.app)
+
 ![JavaScript](https://img.shields.io/badge/JavaScript-ES6+-F7DF1E?logo=javascript&logoColor=black)
 ![HTML5](https://img.shields.io/badge/HTML5-Canvas-E34F26?logo=html5&logoColor=white)
 ![CSS3](https://img.shields.io/badge/CSS3-Neon_Synthwave-1572B6?logo=css3&logoColor=white)
 ![Audio](https://img.shields.io/badge/Web_Audio-Procedural_Synth-9d00ff)
 ![Gamepad](https://img.shields.io/badge/Gamepad_API-Supported-00f0ff)
 ![License](https://img.shields.io/badge/License-MIT-00f0ff)
+
+---
+
+## Play Online
+
+Play immediately in your browser: **[https://bricker-gamma.vercel.app](https://bricker-gamma.vercel.app)**
 
 ---
 
